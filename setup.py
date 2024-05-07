@@ -9,9 +9,9 @@ setup(name='tap-klaviyo',
       url='http://singer.io',
       classifiers=['Programming Language :: Python :: 3 :: Only'],
       py_modules=['tap_klaviyo'],
-      install_requires=['singer-python==3.2.1',
+      install_requires=['singer-python==5.12.2',
                         'requests==2.13.0',
-                        'backoff',
+                        'backoff==1.8.0',
                         'ipdb'],
       entry_points='''
           [console_scripts]
