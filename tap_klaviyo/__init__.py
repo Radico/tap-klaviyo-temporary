@@ -12,12 +12,14 @@ from tap_klaviyo.utils import get_incremental_pull, get_full_pulls, get_all_page
 ENDPOINTS = {
     'global_exclusions': 'https://a.klaviyo.com/api/v1/people/exclusions',
     'lists': 'https://a.klaviyo.com/api/v1/lists',
+    'lists2': 'https://a.klaviyo.com/api/lists',
     # to get list of available metrics
     'metrics': 'https://a.klaviyo.com/api/v1/metrics',
     # to get individual metric data
     'metric': 'https://a.klaviyo.com/api/v1/metric/',
     # to get list members
     'list_members': 'https://a.klaviyo.com/api/v2/group/{list_id}/members/all',
+    'list_members2': 'https://a.klaviyo.com/api/lists/{list_id}/profiles/',
     'events': 'https://a.klaviyo.com/api/events/',
     'profiles': 'https://a.klaviyo.com/api/profiles/',
 }
@@ -35,7 +37,7 @@ EVENT_MAPPINGS = {
     "Updated Email Preferences": "update_email_preferences",
     "Dropped Email": "dropped_email",
     "Events": "events",
-    "Profiles":"profiles"
+    "Profiles":"profiles",
 }
 
 
@@ -84,6 +86,20 @@ LIST_MEMBERS = Stream(
     'full'
 )
 
+LIST_MEMBERS2 = Stream(
+    'list_members2',
+    'list_members2',
+    'id',
+    'full'
+)
+
+LISTS2 = Stream(
+    'lists2',
+    'lists2',
+    'uuid',
+    'full'
+)
+
 EVENTS = Stream(
     'events',
     'events',
@@ -98,7 +114,7 @@ PROFILES = Stream(
     'full'
 )
 
-FULL_STREAMS = [GLOBAL_EXCLUSIONS, LISTS, LIST_MEMBERS, EVENTS, PROFILES]
+FULL_STREAMS = [GLOBAL_EXCLUSIONS, LISTS, LISTS2, LIST_MEMBERS, LIST_MEMBERS2, EVENTS, PROFILES]
 
 
 def get_abs_path(path):
@@ -143,7 +159,7 @@ def do_sync(config, state, catalog):
         if stream['stream'] in EVENT_MAPPINGS.values():
             get_incremental_pull(stream, ENDPOINTS, state,
                                  api_key, start_date)
-        elif stream['stream'] == 'list_members':
+        elif stream['stream'] in ('list_members', 'list_members2'):
             if list_ids:
                 get_full_pulls(stream, ENDPOINTS[stream['stream']], api_key, list_ids)
             else:
