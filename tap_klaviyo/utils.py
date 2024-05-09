@@ -51,13 +51,42 @@ def get_starting_point(stream, state, start_date):
 
 
 def get_latest_event_time(events):
+    if "updated" in events[-1]:
+        parsed_datetime = datetime.datetime.strptime(events[-1]['updated'], '%Y-%m-%dT%H:%M:%S%z')
+        timestamp = parsed_datetime.timestamp()
+        return ts_to_dt(int(timestamp)) if len(events) else None
     return ts_to_dt(int(events[-1]['timestamp'])) if len(events) else None
 
 
-@backoff.on_exception(backoff.expo, requests.HTTPError, max_tries=10, factor=2, logger=logger)
+@backoff.on_exception(backoff.expo, (requests.HTTPError,requests.ConnectionError), max_tries=10, factor=2, logger=logger)
 def authed_get(source, url, params):
+    headers = {}
+    if source in ['events', 'profiles', 'lists2', 'list_members2']:
+        args = singer.utils.parse_args(["start_date"])
+        headers['Authorization'] = f"Bearer {params['api_key']}" if args.config.get("refresh_token") else f"Klaviyo-API-Key {params['api_key']}"
+        logger.info(f"Auth header = {headers['Authorization']}")
+        headers['revision'] = "2023-02-22"
+        #override the params
+        new_params = {}
+        if source == "events":
+            new_params['sort'] = "-datetime"
+            filter_key = "datetime"
+        elif source == "list_members2":
+            new_params['sort'] = "-joined_group_at"
+            filter_key = "updated"
+        elif source != "lists2":
+            new_params['sort'] = "updated"
+            filter_key = "updated"
+
+        if isinstance(params.get('since'),str):
+            url = params['since']
+            new_params = {}
+        elif source not in ("lists2", "list_members2"):
+            new_params['filter'] = f"greater-than({filter_key},{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(params['since']))})"
+        params = new_params
+
     with metrics.http_request_timer(source) as timer:
-        resp = session.request(method='get', url=url, params=params)
+        resp = session.request(method='get',headers=headers,url=url, params=params)
         timer.tags[metrics.Tag.http_status_code] = resp.status_code
 
     resp.raise_for_status()
@@ -70,10 +99,17 @@ def get_all_using_next(stream, url, api_key, since=None):
                                      'since': since,
                                      'sort': 'asc'})
         yield r
-        if 'next' in r.json() and r.json()['next']:
-            since = r.json()['next']
+        if stream in ["events", "profiles", "lists2", "list_members2"]:
+            r = r.json()['links']
+            if 'next' in r and r['next']:
+                since = r['next']
+            else:
+                break
         else:
-            break
+            if 'next' in r.json() and r.json()['next']:
+                since = r.json()['next']
+            else:
+                break
 
 
 def get_all_pages(source, url, api_key):
@@ -99,6 +135,13 @@ def get_list_members(url, api_key, id):
         if not marker:
             break
 
+def get_list_members2(url, api_key, id):
+    for r in get_all_using_next('list_members2', url.format(list_id=id), api_key):
+        response = r.json()
+        records = transform_profiles_data(response.get('data'))
+        records = hydrate_record_with_list_id(records, id)
+        yield records
+
 
 def hydrate_record_with_list_id(records, list_id):
     """
@@ -113,19 +156,49 @@ def hydrate_record_with_list_id(records, list_id):
 
     return records
 
+def transform_events_data(data):
+    return_data = []
+    for row in data:
+        if "profile_id" in row['attributes']:
+            if row['attributes']["profile_id"] is None:
+                row['attributes']["profile_id"] = ""
+        return_data.append(row['attributes'])
+    return return_data
+
+def transform_profiles_data(data):
+    return_data = []
+    for row in data:
+        row['timestamp'] = row['attributes']['updated']
+        return_data.append(row['attributes'])
+    return return_data
 
 def get_incremental_pull(stream, endpoint, state, api_key, start_date):
     latest_event_time = get_starting_point(stream, state, start_date)
 
     with metrics.record_counter(stream['stream']) as counter:
-        url = '{}{}/timeline'.format(
-            endpoint,
-            stream['tap_stream_id']
-        )
+        if stream['stream']=="events":
+            url = endpoint['events']
+        elif stream['stream']=="profiles":
+            url = endpoint['profiles']
+        elif stream['stream']=="lists2":
+            url = endpoint['lists2']
+        else:
+            endpoint = endpoint['metric']
+            url = '{}{}/timeline'.format(
+                endpoint,
+                stream['tap_stream_id']
+            )
         for response in get_all_using_next(
                 stream['stream'], url, api_key,
                 latest_event_time):
-            events = response.json().get('data')
+            if stream['stream']=="events":
+                events = response.json().get('data')
+                events = transform_events_data(events)
+            elif stream['stream']=="profiles":
+                events = response.json().get('data')
+                events = transform_profiles_data(events)
+            else:
+                events = response.json().get('data')
 
             if events:
                 counter.increment(len(events))
@@ -141,14 +214,22 @@ def get_incremental_pull(stream, endpoint, state, api_key, start_date):
 
 def get_full_pulls(resource, endpoint, api_key, list_ids=None):
     with metrics.record_counter(resource['stream']) as counter:
-        if resource['stream'] == 'list_members':
+        if resource['stream'] in ('list_members', 'list_members2'):
             for id in list_ids:
-                for records in get_list_members(endpoint, api_key, id):
+                if resource['stream'] == 'list_members':
+                    source = get_list_members(endpoint, api_key, id)
+                else:
+                    source = get_list_members2(endpoint, api_key, id)
+                for records in source:
                     if records:
                         counter.increment(len(records))
                         singer.write_records(resource['stream'], records)
         else:
-            for response in get_all_pages(resource['stream'], endpoint, api_key):
+            if resource['stream'] == "lists2":
+                source = get_all_using_next(resource['stream'], endpoint, api_key)
+            else:
+                source = get_all_pages(resource['stream'], endpoint, api_key)
+            for response in source:
                 records = response.json().get('data')
 
                 if records:
