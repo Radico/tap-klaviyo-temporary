@@ -15,7 +15,7 @@ setup(name='tap-klaviyo-temporary',
                         'ipdb'],
       entry_points='''
           [console_scripts]
-          tap-klaviyo=tap_klaviyo:main
+          tap-klaviyo-temporary=tap_klaviyo:main
       ''',
       packages=['tap_klaviyo'],
       package_data={
