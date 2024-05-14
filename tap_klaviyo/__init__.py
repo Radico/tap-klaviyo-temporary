@@ -11,6 +11,7 @@ from tap_klaviyo.utils import get_incremental_pull, get_full_pulls, get_all_page
 
 ENDPOINTS = {
     'global_exclusions': 'https://a.klaviyo.com/api/v1/people/exclusions',
+    'global_exclusions2': 'https://a.klaviyo.com/api/profiles/',
     'lists': 'https://a.klaviyo.com/api/v1/lists',
     'lists2': 'https://a.klaviyo.com/api/lists',
     # to get list of available metrics
@@ -38,6 +39,7 @@ EVENT_MAPPINGS = {
     "Dropped Email": "dropped_email",
     "Events": "events",
     "Profiles":"profiles",
+    "Global Exclusions": "global_exclusions2",
 }
 
 
@@ -68,6 +70,13 @@ REQUIRED_CONFIG_KEYS = ["start_date"] + CREDENTIALS_KEYS
 GLOBAL_EXCLUSIONS = Stream(
     'global_exclusions',
     'global_exclusions',
+    'email',
+    'full'
+)
+
+GLOBAL_EXCLUSIONS2 = Stream(
+    'global_exclusions2',
+    'global_exclusions2',
     'email',
     'full'
 )
@@ -114,7 +123,7 @@ PROFILES = Stream(
     'full'
 )
 
-FULL_STREAMS = [GLOBAL_EXCLUSIONS, LISTS, LISTS2, LIST_MEMBERS, LIST_MEMBERS2, EVENTS, PROFILES]
+FULL_STREAMS = [GLOBAL_EXCLUSIONS, GLOBAL_EXCLUSIONS2, LISTS, LISTS2, LIST_MEMBERS, LIST_MEMBERS2, EVENTS, PROFILES]
 
 
 def get_abs_path(path):

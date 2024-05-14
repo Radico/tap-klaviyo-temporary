@@ -61,11 +61,11 @@ def get_latest_event_time(events):
 @backoff.on_exception(backoff.expo, (requests.HTTPError,requests.ConnectionError), max_tries=10, factor=2, logger=logger)
 def authed_get(source, url, params):
     headers = {}
-    if source in ['events', 'profiles', 'lists2', 'list_members2']:
+    if source in ['events', 'profiles', 'lists2', 'list_members2', 'global_exclusions2']:
         args = singer.utils.parse_args(["start_date"])
         headers['Authorization'] = f"Bearer {params['api_key']}" if args.config.get("refresh_token") else f"Klaviyo-API-Key {params['api_key']}"
         logger.info(f"Auth header = {headers['Authorization']}")
-        headers['revision'] = "2023-02-22"
+        headers['revision'] = "2024-02-15"
         #override the params
         new_params = {}
         if source == "events":
@@ -74,14 +74,20 @@ def authed_get(source, url, params):
         elif source == "list_members2":
             new_params['sort'] = "-joined_group_at"
             filter_key = "updated"
-        elif source != "lists2":
+        elif source == "lists2":
+            # lists don't support sorting
+            pass
+        elif source == "global_exclusions2":
+            # profiles don't need sorting
+            pass
+        else:
             new_params['sort'] = "updated"
             filter_key = "updated"
 
         if isinstance(params.get('since'),str):
             url = params['since']
             new_params = {}
-        elif source not in ("lists2", "list_members2"):
+        elif source not in ("lists2", "list_members2", "global_exclusions2"):
             new_params['filter'] = f"greater-than({filter_key},{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(params['since']))})"
         params = new_params
 
@@ -99,7 +105,7 @@ def get_all_using_next(stream, url, api_key, since=None):
                                      'since': since,
                                      'sort': 'asc'})
         yield r
-        if stream in ["events", "profiles", "lists2", "list_members2"]:
+        if stream in ["events", "profiles", "lists2", "list_members2", "global_exclusions2"]:
             r = r.json()['links']
             if 'next' in r and r['next']:
                 since = r['next']
@@ -182,6 +188,12 @@ def get_incremental_pull(stream, endpoint, state, api_key, start_date):
             url = endpoint['profiles']
         elif stream['stream']=="lists2":
             url = endpoint['lists2']
+        elif stream['stream']=="global_exclusions2":
+            querystring = "&".join([
+                # "additional-fields[profile]=subscriptions",
+                "filter=greater-than(subscriptions.email.marketing.suppression.timestamp,{})".format(start_date)
+            ])
+            url = '{}?{}'.format(endpoint['profiles'], querystring)
         else:
             endpoint = endpoint['metric']
             url = '{}{}/timeline'.format(
@@ -194,7 +206,7 @@ def get_incremental_pull(stream, endpoint, state, api_key, start_date):
             if stream['stream']=="events":
                 events = response.json().get('data')
                 events = transform_events_data(events)
-            elif stream['stream']=="profiles":
+            elif stream['stream'] in ("profiles", "global_exclusions2"):
                 events = response.json().get('data')
                 events = transform_profiles_data(events)
             else:
@@ -225,7 +237,7 @@ def get_full_pulls(resource, endpoint, api_key, list_ids=None):
                         counter.increment(len(records))
                         singer.write_records(resource['stream'], records)
         else:
-            if resource['stream'] == "lists2":
+            if resource['stream'] in ("lists2", "global_exclusions2"):
                 source = get_all_using_next(resource['stream'], endpoint, api_key)
             else:
                 source = get_all_pages(resource['stream'], endpoint, api_key)
