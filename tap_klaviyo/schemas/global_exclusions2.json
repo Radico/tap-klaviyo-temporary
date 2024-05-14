@@ -1,0 +1,56 @@
+{
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": ["string", "null"]
+    },
+    "id": {
+      "type": ["string", "null"]
+    },
+    "email": {
+      "type": ["string", "null"]
+    },
+    "phone_number": {
+      "type": ["string", "null"]
+    },
+    "external_id": {
+      "type": ["string", "null"]
+    },
+    "anonymous_id": {
+      "type": ["string", "null"]
+    },
+    "first_name": {
+      "type": ["string", "null"]
+    },
+    "last_name": {
+      "type": ["string", "null"]
+    },
+    "organization": {
+      "type": ["string", "null"]
+    },
+    "title": {
+      "type": ["string", "null"]
+    },
+    "image": {
+      "type": ["string", "null"]
+    },
+    "created": {
+      "type": ["string", "null"]
+    },
+    "updated": {
+      "type": ["string", "null"]
+    },
+    "last_event_date": {
+      "type": ["string", "null"]
+    },
+    "location": {
+      "type": "object"
+    },
+    "properties": {
+      "type": "object"
+    },
+    "subscriptions": {
+      "type": "object"
+    }
+  }
+}

@@ -28,11 +28,16 @@ setup(name='tap-klaviyo-temporary',
                 "unsubscribe.json",
                 "dropped_email.json",
                 "global_exclusions.json",
+                "global_exclusions2.json",
                 "lists.json",
+                "lists2.json",
                 "list_members.json",
+                "list_members2.json",
                 "subscribe_list.json",
                 "unsub_list.json",
                 "update_email_preferences.json",
+                "events.json",
+                "profiles.json"
               ]
          },
       include_package_data=True
