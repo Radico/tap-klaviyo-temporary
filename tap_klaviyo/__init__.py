@@ -10,16 +10,16 @@ from requests.auth import HTTPBasicAuth
 from tap_klaviyo.utils import get_incremental_pull, get_full_pulls, get_all_pages
 
 ENDPOINTS = {
-    'global_exclusions': 'https://a.klaviyo.com/api/v1/people/exclusions',
+    # 'global_exclusions': 'https://a.klaviyo.com/api/v1/people/exclusions',
     'global_exclusions2': 'https://a.klaviyo.com/api/profiles/',
-    'lists': 'https://a.klaviyo.com/api/v1/lists',
+    # 'lists': 'https://a.klaviyo.com/api/v1/lists',
     'lists2': 'https://a.klaviyo.com/api/lists',
     # to get list of available metrics
-    'metrics': 'https://a.klaviyo.com/api/v1/metrics',
+    # 'metrics': 'https://a.klaviyo.com/api/v1/metrics',
     # to get individual metric data
-    'metric': 'https://a.klaviyo.com/api/v1/metric/',
+    # 'metric': 'https://a.klaviyo.com/api/v1/metric/',
     # to get list members
-    'list_members': 'https://a.klaviyo.com/api/v2/group/{list_id}/members/all',
+    # 'list_members': 'https://a.klaviyo.com/api/v2/group/{list_id}/members/all',
     'list_members2': 'https://a.klaviyo.com/api/lists/{list_id}/profiles/',
     'events': 'https://a.klaviyo.com/api/events/',
     'profiles': 'https://a.klaviyo.com/api/profiles/',
