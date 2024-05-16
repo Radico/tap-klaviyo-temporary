@@ -16,6 +16,7 @@ ENDPOINTS = {
     'lists2': 'https://a.klaviyo.com/api/lists',
     # to get list of available metrics
     # 'metrics': 'https://a.klaviyo.com/api/v1/metrics',
+    'metrics2': 'https://a.klaviyo.com/api/metrics',
     # to get individual metric data
     # 'metric': 'https://a.klaviyo.com/api/v1/metric/',
     # to get list members
@@ -109,6 +110,13 @@ LISTS2 = Stream(
     'full'
 )
 
+METRICS2 = Stream(
+    'metrics2',
+    'metrics2',
+    'uuid',
+    'full'
+)
+
 EVENTS = Stream(
     'events',
     'events',
@@ -123,7 +131,17 @@ PROFILES = Stream(
     'full'
 )
 
-FULL_STREAMS = [GLOBAL_EXCLUSIONS, GLOBAL_EXCLUSIONS2, LISTS, LISTS2, LIST_MEMBERS, LIST_MEMBERS2, EVENTS, PROFILES]
+FULL_STREAMS = [
+    # GLOBAL_EXCLUSIONS,
+    GLOBAL_EXCLUSIONS2,
+    # LISTS,
+    LISTS2,
+    METRICS2,
+    # LIST_MEMBERS,
+    LIST_MEMBERS2,
+    EVENTS,
+    PROFILES,
+]
 
 
 def get_abs_path(path):

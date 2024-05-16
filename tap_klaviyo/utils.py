@@ -61,7 +61,7 @@ def get_latest_event_time(events):
 @backoff.on_exception(backoff.expo, (requests.HTTPError,requests.ConnectionError), max_tries=10, factor=2, logger=logger)
 def authed_get(source, url, params):
     headers = {}
-    if source in ['events', 'profiles', 'lists2', 'list_members2', 'global_exclusions2']:
+    if source in ['events', 'profiles', 'lists2', 'list_members2', 'global_exclusions2', 'metrics2']:
         args = singer.utils.parse_args(["start_date"])
         headers['Authorization'] = f"Bearer {params['api_key']}" if args.config.get("refresh_token") else f"Klaviyo-API-Key {params['api_key']}"
         logger.info(f"Auth header = {headers['Authorization']}")
@@ -74,11 +74,8 @@ def authed_get(source, url, params):
         elif source == "list_members2":
             new_params['sort'] = "-joined_group_at"
             filter_key = "updated"
-        elif source == "lists2":
-            # lists don't support sorting
-            pass
-        elif source == "global_exclusions2":
-            # profiles don't need sorting
+        elif source in ("lists2", "global_exclusions2", "metrics2"):
+            # don't support sorting
             pass
         else:
             new_params['sort'] = "updated"
@@ -87,7 +84,7 @@ def authed_get(source, url, params):
         if isinstance(params.get('since'),str):
             url = params['since']
             new_params = {}
-        elif source not in ("lists2", "list_members2", "global_exclusions2"):
+        elif source not in ("lists2", "list_members2", "global_exclusions2", "metrics2"):
             new_params['filter'] = f"greater-than({filter_key},{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(params['since']))})"
         params = new_params
 
@@ -165,9 +162,19 @@ def hydrate_record_with_list_id(records, list_id):
 def transform_events_data(data):
     return_data = []
     for row in data:
+        metric_id = row.get('relationships', {}).get('metric', {}).get('data', {}).get('id')
+        if metric_id:
+            row['attributes']['metric_id'] = metric_id
+
+        # not sure this ever works - possibly out of date?
         if "profile_id" in row['attributes']:
             if row['attributes']["profile_id"] is None:
                 row['attributes']["profile_id"] = ""
+
+        profile_id = row.get('relationships', {}).get('profile', {}).get('data', {}).get('id')
+        if profile_id:
+            row['attributes']['profile_id'] = profile_id
+
         return_data.append(row['attributes'])
     return return_data
 
@@ -188,6 +195,8 @@ def get_incremental_pull(stream, endpoint, state, api_key, start_date):
             url = endpoint['profiles']
         elif stream['stream']=="lists2":
             url = endpoint['lists2']
+        elif stream['stream']=="metrics2":
+            url = endpoint['metrics2']
         elif stream['stream']=="global_exclusions2":
             querystring = "&".join([
                 # "additional-fields[profile]=subscriptions",
@@ -237,7 +246,7 @@ def get_full_pulls(resource, endpoint, api_key, list_ids=None):
                         counter.increment(len(records))
                         singer.write_records(resource['stream'], records)
         else:
-            if resource['stream'] in ("lists2", "global_exclusions2"):
+            if resource['stream'] in ("lists2", "global_exclusions2", "metrics2"):
                 source = get_all_using_next(resource['stream'], endpoint, api_key)
             else:
                 source = get_all_pages(resource['stream'], endpoint, api_key)
