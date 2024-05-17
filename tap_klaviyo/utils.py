@@ -69,10 +69,10 @@ def authed_get(source, url, params):
         #override the params
         new_params = {}
         if source == "events":
-            new_params['sort'] = "-datetime"
+            new_params['sort'] = "datetime"
             filter_key = "datetime"
         elif source == "list_members2":
-            new_params['sort'] = "-joined_group_at"
+            new_params['sort'] = "joined_group_at"
             filter_key = "updated"
         elif source in ("lists2", "global_exclusions2", "metrics2"):
             # don't support sorting
