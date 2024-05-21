@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-setup(name='tap-klaviyo',
+setup(name='tap-klaviyo-temporary',
       version='0.0.1',
       description='Singer.io tap for extracting data from the Klaviyo API',
       author='Stitch',
@@ -15,7 +15,7 @@ setup(name='tap-klaviyo',
                         'ipdb'],
       entry_points='''
           [console_scripts]
-          tap-klaviyo=tap_klaviyo:main
+          tap-klaviyo-temporary=tap_klaviyo:main
       ''',
       packages=['tap_klaviyo'],
       package_data={
