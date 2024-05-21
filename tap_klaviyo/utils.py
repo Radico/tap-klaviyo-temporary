@@ -182,6 +182,7 @@ def transform_profiles_data(data):
     return_data = []
     for row in data:
         row['timestamp'] = row['attributes']['updated']
+        row['attributes']['id'] = row['id']
         return_data.append(row['attributes'])
     return return_data
 
