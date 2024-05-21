@@ -51,6 +51,9 @@
     },
     "subscriptions": {
       "type": "object"
+    },
+    "attributes": {
+      "type": "object"
     }
   }
 }
