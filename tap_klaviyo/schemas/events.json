@@ -4,6 +4,9 @@
     "metric_id": {
       "type": "string"
     },
+    "id": {
+      "type": "string"
+    },
     "uuid": {
       "type": "string"
     },
