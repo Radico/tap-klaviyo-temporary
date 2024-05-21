@@ -185,7 +185,7 @@ def transform_profiles_data(data):
     for row in data:
         row['timestamp'] = row['attributes']['updated']
         row['attributes']['id'] = row['id']
-        return_data.append(row['attributes'])
+        return_data.append(dict(row['attributes'], attributes=row['attributes']))
     return return_data
 
 def get_incremental_pull(stream, endpoint, state, api_key, start_date):
