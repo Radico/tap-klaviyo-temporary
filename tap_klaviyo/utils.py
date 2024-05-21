@@ -175,6 +175,8 @@ def transform_events_data(data):
         if profile_id:
             row['attributes']['profile_id'] = profile_id
 
+        row['attributes']['id'] = row['id']
+
         return_data.append(row['attributes'])
     return return_data
 
