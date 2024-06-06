@@ -141,7 +141,7 @@ def get_list_members(url, api_key, id):
 def get_list_members2(url, api_key, id):
     for r in get_all_using_next('list_members2', url.format(list_id=id), api_key):
         response = r.json()
-        records = transform_profiles_data(response.get('data'))
+        records = transform_list_members_data(response.get('data'), id)
         records = hydrate_record_with_list_id(records, id)
         yield records
 
@@ -178,6 +178,13 @@ def transform_events_data(data):
         row['attributes']['id'] = row['id']
 
         return_data.append(row['attributes'])
+    return return_data
+
+def transform_list_members_data(data, list_id):
+    # id, list_id, email
+    return_data = []
+    for row in data:
+        return_data.append({'id': row['id'], 'list_id': list_id, 'email': row['attributes']['email']})
     return return_data
 
 def transform_profiles_data(data):
