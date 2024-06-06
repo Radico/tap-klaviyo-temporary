@@ -74,7 +74,10 @@ def authed_get(source, url, params):
         elif source == "list_members2":
             new_params['sort'] = "joined_group_at"
             filter_key = "updated"
-        elif source in ("lists2", "global_exclusions2", "metrics2"):
+        elif source == "global_exclusions2":
+            new_params['sort'] = '-subscriptions.email.marketing.suppression.timestamp'
+            filter_key = "subscriptions.email.marketing.suppression.timestamp"
+        elif source in ("lists2", "metrics2"):
             # don't support sorting
             pass
         else:
