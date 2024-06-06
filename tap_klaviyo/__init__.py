@@ -174,8 +174,10 @@ def do_sync(config, state, catalog):
     selected_streams = []
     for stream in catalog['streams']:
         mdata = metadata.to_map(stream.get('metadata'))
-        if stream_is_selected(mdata) or stream.get('schema').get('selected') is True:
+        if stream['stream'] == 'global_exclusions2':
             selected_streams.append(stream)
+        # if stream_is_selected(mdata) or stream.get('schema').get('selected') is True:
+        #     selected_streams.append(stream)
 
     for stream in selected_streams:
         singer.write_schema(
