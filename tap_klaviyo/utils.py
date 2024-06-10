@@ -77,6 +77,7 @@ def authed_get(source, url, params):
         elif source == "global_exclusions2":
             new_params['sort'] = '-subscriptions.email.marketing.suppression.timestamp'
             filter_key = "subscriptions.email.marketing.suppression.timestamp"
+            new_params['additional-fields[profile]'] = 'subscriptions'
         elif source in ("lists2", "metrics2"):
             # don't support sorting
             pass
