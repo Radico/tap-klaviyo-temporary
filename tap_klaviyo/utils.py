@@ -150,7 +150,7 @@ def get_list_members2(url, api_key, id):
         yield records
 
 def get_segment_members(url, api_key, id):
-    for r in get_all_using_next('segment_members', url.format(list_id=id), api_key):
+    for r in get_all_using_next('segment_members', url.format(segment_id=id), api_key):
         response = r.json()
         records = transform_list_members_data(response.get('data'), id)
         records = hydrate_record_with_list_id(records, id)
