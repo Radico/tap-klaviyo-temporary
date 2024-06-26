@@ -24,6 +24,7 @@ ENDPOINTS = {
     'list_members2': 'https://a.klaviyo.com/api/lists/{list_id}/profiles/',
     'events': 'https://a.klaviyo.com/api/events/',
     'profiles': 'https://a.klaviyo.com/api/profiles/',
+    'segment_members': 'https://a.klaviyo.com/api/segments/{segment_id}/profiles/',
 }
 
 # listing of incremental streams
@@ -39,12 +40,16 @@ EVENT_MAPPINGS = {
     "Updated Email Preferences": "update_email_preferences",
     "Dropped Email": "dropped_email",
     "Events": "events",
-    "Profiles":"profiles",
+    "Profiles": "profiles",
     "Global Exclusions": "global_exclusions2",
 }
 
 
 class ListMemberStreamException(Exception):
+    pass
+
+
+class SegmentMemberStreamException(Exception):
     pass
 
 
@@ -103,6 +108,13 @@ LIST_MEMBERS2 = Stream(
     'full'
 )
 
+SEGMENT_MEMBERS = Stream(
+    'segment_members',
+    'segment_members',
+    'id',
+    'full'
+)
+
 LISTS2 = Stream(
     'lists2',
     'lists2',
@@ -141,6 +153,7 @@ FULL_STREAMS = [
     LIST_MEMBERS2,
     EVENTS,
     PROFILES,
+    SEGMENT_MEMBERS,
 ]
 
 
@@ -169,6 +182,7 @@ def stream_is_selected(mdata):
 def do_sync(config, state, catalog):
     api_key = config['api_key']
     list_ids = config.get('list_ids')
+    segment_ids = config.get('segment_ids')
     start_date = config['start_date'] if 'start_date' in config else None
 
     selected_streams = []
@@ -193,6 +207,14 @@ def do_sync(config, state, catalog):
                 raise ListMemberStreamException(
                     'A list of Klaviyo List IDs must be specified in the client tap '
                     'config if extracting list members. Check out the Untuckit Klaviyo '
+                    'tap for reference')
+        elif stream['stream'] == 'segment_members':
+            if segment_ids:
+                get_full_pulls(stream, ENDPOINTS[stream['stream']], api_key, segment_ids)
+            else:
+                raise SegmentMemberStreamException(
+                    'A list of Klaviyo Segment IDs must be specified in the client tap '
+                    'config if extracting segment members. Check out the Untuckit Klaviyo '
                     'tap for reference')
         else:
             get_full_pulls(stream, ENDPOINTS[stream['stream']], api_key)
