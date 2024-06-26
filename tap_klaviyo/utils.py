@@ -61,7 +61,7 @@ def get_latest_event_time(events):
 @backoff.on_exception(backoff.expo, (requests.HTTPError,requests.ConnectionError), max_tries=10, factor=2, logger=logger)
 def authed_get(source, url, params):
     headers = {}
-    if source in ['events', 'profiles', 'lists2', 'list_members2', 'global_exclusions2', 'metrics2']:
+    if source in ['events', 'profiles', 'lists2', 'list_members2', 'global_exclusions2', 'metrics2', 'segment_members']:
         args = singer.utils.parse_args(["start_date"])
         headers['Authorization'] = f"Bearer {params['api_key']}" if args.config.get("refresh_token") else f"Klaviyo-API-Key {params['api_key']}"
         logger.info(f"Auth header = {headers['Authorization']}")
@@ -71,7 +71,7 @@ def authed_get(source, url, params):
         if source == "events":
             new_params['sort'] = "datetime"
             filter_key = "datetime"
-        elif source == "list_members2":
+        elif source in ("list_members2", "segment_members"):
             new_params['sort'] = "joined_group_at"
             filter_key = "updated"
         elif source == "global_exclusions2":
@@ -88,7 +88,7 @@ def authed_get(source, url, params):
         if isinstance(params.get('since'),str):
             url = params['since']
             new_params = {}
-        elif source not in ("lists2", "list_members2", "global_exclusions2", "metrics2"):
+        elif source not in ("lists2", "list_members2", "global_exclusions2", "metrics2", "segment_members"):
             new_params['filter'] = f"greater-than({filter_key},{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(params['since']))})"
         params = new_params
 
@@ -106,7 +106,7 @@ def get_all_using_next(stream, url, api_key, since=None):
                                      'since': since,
                                      'sort': 'asc'})
         yield r
-        if stream in ["events", "profiles", "lists2", "list_members2", "global_exclusions2"]:
+        if stream in ["events", "profiles", "lists2", "list_members2", "global_exclusions2", "segment_members"]:
             r = r.json()['links']
             if 'next' in r and r['next']:
                 since = r['next']
@@ -149,6 +149,12 @@ def get_list_members2(url, api_key, id):
         records = hydrate_record_with_list_id(records, id)
         yield records
 
+def get_segment_members(url, api_key, id):
+    for r in get_all_using_next('segment_members', url.format(list_id=id), api_key):
+        response = r.json()
+        records = transform_list_members_data(response.get('data'), id)
+        records = hydrate_record_with_list_id(records, id)
+        yield records
 
 def hydrate_record_with_list_id(records, list_id):
     """
@@ -249,10 +255,12 @@ def get_incremental_pull(stream, endpoint, state, api_key, start_date):
 
 def get_full_pulls(resource, endpoint, api_key, list_ids=None):
     with metrics.record_counter(resource['stream']) as counter:
-        if resource['stream'] in ('list_members', 'list_members2'):
+        if resource['stream'] in ('list_members', 'list_members2', 'segment_members'):
             for id in list_ids:
                 if resource['stream'] == 'list_members':
                     source = get_list_members(endpoint, api_key, id)
+                elif resource['stream'] == 'segment_members':
+                    source = get_segment_members(endpoint, api_key, id)
                 else:
                     source = get_list_members2(endpoint, api_key, id)
                 for records in source:
