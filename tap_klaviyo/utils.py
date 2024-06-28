@@ -106,7 +106,15 @@ def get_all_using_next(stream, url, api_key, since=None):
                                      'since': since,
                                      'sort': 'asc'})
         yield r
-        if stream in ["events", "profiles", "lists2", "list_members2", "global_exclusions2", "segment_members"]:
+        if stream in [
+            "events",
+            "profiles",
+            "lists2",
+            "list_members2",
+            "global_exclusions2",
+            "segment_members",
+            "metrics2"
+        ]:
             r = r.json()['links']
             if 'next' in r and r['next']:
                 since = r['next']
